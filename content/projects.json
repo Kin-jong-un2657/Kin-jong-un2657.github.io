@@ -1,0 +1,152 @@
+{
+  "reviewed": "2026-11-16",
+  "projects": [
+    {
+      "id": "iam302t",
+      "sourceNumber": 1,
+      "title": "Looking beyond the byteplot",
+      "fullTitle": "CNN Byteplot & Entropy for Malware Classification",
+      "course": "IAM302t",
+      "discipline": "Malware research",
+      "role": "Team Lead · 4-member academic team",
+      "timeline": "September 2026–Present",
+      "tags": [
+        "Python",
+        "PyTorch",
+        "pefile"
+      ],
+      "repo": "https://github.com/Kin-jong-un2657/IAM302t-Group6-Byteplot",
+      "private": true,
+      "description": "Static PE analysis and parent-grouped experiments on how packing changes what a CNN sees.",
+      "scope": [
+        "182 disarmed PE audit records",
+        "10 shared test parents in the E5 pilot"
+      ],
+      "status": "Bounded research pilot",
+      "icon": "file",
+      "sections": [
+        {
+          "title": "Executive Summary",
+          "markdown": "I developed evaluation tooling and reviewed static-analysis evidence for an academic study of CNN malware classification under packing. The project examines whether an entropy channel adds useful information to a grayscale byteplot, and how that compares with a PE-structure channel. My responsibilities included team leadership, evaluation code, VM/Colab research work and technical reporting, with AI assistance recorded in the contribution evidence.\n\nThe retained static-audit evidence covers 182 disarmed PE records. A separate UPX-to-MPRESS pilot compares four input configurations across three seeds on a shared test cohort of ten original parents. These are bounded research observations, rather than a deployment benchmark or evidence of general malware-detection accuracy.\n\nThe engineering contribution is the evaluation workflow: aligned representations, parent-aware splits, validation-based checkpoint selection and explicit treatment of truncation, failed inputs and source bias. Synthetic fixtures provide a way to inspect the software workflow without handling real PE samples. The research also exposes limitations: small cohorts, possible source/toolchain shortcuts and model-seed runs that collapse to one predicted class. Those findings are retained in the case study instead of being converted into unsupported performance claims."
+        },
+        {
+          "title": "Problem & Security/Engineering Constraints",
+          "markdown": "Packing changes the byte distribution visible to a static classifier. A model may respond to packer texture, compiler provenance, file size or padding rather than a signal that transfers to another dataset. An apparent improvement from entropy can therefore be difficult to interpret without paired examples and controlled evaluation.\n\nThe project separates **E0 data-quality/artifact checks** from the **five research experiment groups E1–E5**. Those groups cover degradation under packing, input-channel comparison, learning curves and entropy probes, packed-benign false positives, and transfer to an unseen packer. Implementing these recipes is distinct from completing every experiment on a sufficiently large real dataset.\n\nThe static182 inputs are disarmed samples. A successful parse does not establish executability, an unpacked original or a verified training admission. Likewise, DiE's `clean` label is an observation from a detector, not proof that a sample is benign or unpacked. The redacted export omits original hashes and parent mapping, so its 182 aliases cannot establish 182 independent original parents.\n\nRepresentations also have a finite view. At the default 256 × 256 resolution, the grayscale model sees at most 65,536 bytes. Files beyond that size are truncated in the representation; shorter files introduce padding. Comparisons must preserve byte offsets across channels and expose those conditions rather than silently hiding them."
+        },
+        {
+          "title": "System Architecture",
+          "markdown": "```mermaid\nflowchart TD\n    SRC[\"Authorized private inputs\"] --> AUD[\"Read-only static PE audit in VM\"]\n    AUD --> AR[\"Audit CSV and receipts\"]\n    SRC --> GATE[\"Manifest and eligibility checks\"]\n    GATE --> REP[\"Parent split and aligned representations\"]\n    SYN[\"Synthetic non-PE fixtures\"] --> REP\n    REP --> CNN[\"C1-C4 classifiers and entropy probe\"]\n    CNN --> EV[\"Parent-aware evaluation\"]\n    EV --> R[\"CSV, JSON and research reports\"]\n```\n\n\nThe audit branch produces evidence about inspected files. It does not automatically admit the static182 cohort into classifier training. The preparation branch validates manifests and eligibility separately. The demo branch uses non-PE synthetic bytes and mock packing/region labels; it does not reproduce UPX or MPRESS behaviour.\n\nThe inspected implementation is a Python package with a CLI. `io.py` validates manifests, rejects duplicate parent/variant entries and checks cross-parent identical-byte mappings. `representation.py` assigns parent splits before preparing aligned grayscale, entropy and PE-region arrays. `models.py` selects channels for C1–C4 and implements shared valid-byte pooling. The training engine and experiment runner produce per-run predictions, metrics and reports."
+        },
+        {
+          "title": "Key Engineering Decisions",
+          "markdown": "1. **Keep parent identity separate from variant count.** Every variant of one original parent stays in the same train/validation/test partition. This reduces the risk of training on one version of a file and testing on a related version. It does not independently solve family or source/toolchain confounding.\n2. **Align channels to the same visible bytes.** Byte intensity is normalized by 255; entropy is normalized by eight. The default entropy calculation uses overlapping 256-byte windows with a 64-byte step and excludes zero-padding. This makes a channel comparison interpretable against the bytes visible to C1.\n3. **Use a shared model structure.** C1 uses grayscale; C2 adds entropy; C3 adds PE regions; C4 uses all three. The valid-byte mask participates in final pooling across configurations. The PE stub map remains heuristic, and masked pooling does not guarantee the complete removal of padding artifacts.\n4. **Select checkpoints with validation data.** The engine chooses classifier checkpoints by validation macro-F1. E5 trains and validates on UPX variants before testing MPRESS variants; it does not substitute an E2 result for a missing E5 run.\n5. **Separate software checks from research findings.** Non-executable synthetic fixtures and probe checks exercise the pipeline. Their scores cannot establish real malware-classification quality. The earlier evaluation-tooling report records synthetic checks; this review did not rerun them.\n6. **Retain limits in the result record.** Per-file errors, truncation, cohort scope and skipped work remain observable. The retained E5 receipt explicitly states that private checkpoints and parent-level predictions were unavailable for independent replay.\n\nThese decisions prioritize traceability and interpretable comparisons over an impressive headline score. The contribution record attributes the current BODMAS research and reporting to Kiên with AI support and distinguishes it from teammates' historical code contributions. It does not assign a percentage of authorship."
+        },
+        {
+          "title": "Quantitative Evaluation / Benchmarks",
+          "markdown": "| Observation | Recorded value | Evidence and interpretation |\n| --- | --- | --- |\n| Static PE audit | 182 records, 182 parsed | CSV count and historical VM/export receipts; selected disarmed cohort only |\n| DiE labels | 102 clean, 58 packed, 22 unknown | Detector labels, not ground-truth unpacked/benign classes |\n| Representation truncation | 145 of 182 records exceed 64 KiB | Representation limit, not physical file corruption |\n| Separate paired UPX cohort | 50 parents, 150 V0/V1/V1u rows | Historical report; variants are not independent parents |\n| E5 model-seed jobs | 4 configurations × 3 seeds = 12 jobs | Retained pilot status; not 12 independent datasets |\n| E5 shared test population | 10 parents: 8 malware and 2 benign | Three seeds reuse the same test parents |\n| E5 failure mode | 5 listed model-seed jobs predict one class | Recorded in `all_one_class_jobs`; model robustness remains limited |\n| Validated operational detection rate / latency | Not established | No deployment benchmark claimed |\n\nThe static182 CSV matches the export receipt's SHA-256. E5 aggregate confusion-matrix/F1/FPR consistency is recorded as 12/12 matching, but the receipt explicitly excludes independent checkpoint/prediction replay and independently recomputed bootstrap intervals. With only two benign test parents, FPR moves in 0.5 increments; it cannot substantiate a low operational false-positive rate.\n\nThe historical E0 report still says E5 was not run at its earlier cutoff. The later E5 status and verification receipts record the completed conditional pilot and take precedence for that status. Counts from different cohorts are not added together without identity-level overlap information.\n\n**Missing measurement:** PENDING_PARENT_COUNT. This count requires a grouped export from the private identity manifest; it is not needed to describe the verified 182-record audit scope."
+        }
+      ]
+    },
+    {
+      "id": "miniecommerce",
+      "sourceNumber": 3,
+      "title": "Integrity at every layer",
+      "fullTitle": "MiniEcommerce Secure Web & Database System",
+      "course": "PWD301",
+      "discipline": "Backend engineering",
+      "role": "Database & Product Developer · team project",
+      "timeline": "September–October 2026",
+      "tags": [
+        "Python",
+        "Flask",
+        "SQL",
+        "pytest"
+      ],
+      "repo": "https://github.com/ChauLeGiaBao/MiniEcommerce-PWD301",
+      "private": false,
+      "description": "Database constraints, product discovery and regression checks in a Flask and SQL Server application.",
+      "scope": [
+        "3 database integrity rules",
+        "14 authored pytest test functions"
+      ],
+      "status": "Implemented academic project",
+      "icon": "database",
+      "sections": [
+        {
+          "title": "Executive Summary",
+          "markdown": "I implemented database and product features for a team-built Flask e-commerce application, focusing on data integrity, consistent product discovery and review validation. My contribution includes the user–product review relationship, stock and rating constraints, shared query behaviour, regression checks and a SQL Server rating-aggregation fix.\n\nThe implementation enforces three concrete integrity rules: stock cannot be negative, a user can submit only one review per product, and ratings must remain between one and five. Product discovery supports search, filtering, sorting and pagination through a shared service used by web and API routes. These are four capabilities, not four separate discovery endpoints.\n\nThe review and stock scope contains fourteen pytest test functions, covering behaviours such as rejected guest submissions, invalid ratings, escaped review comments and decimal averages. This is a count of authored functions; it is not a newly executed passing-test total or a coverage percentage. The project demonstrates how validation, database constraints and regression checks complement one another. It does not claim production-scale traffic, complete application security or measured performance improvement."
+        },
+        {
+          "title": "Problem & Security/Engineering Constraints",
+          "markdown": "An e-commerce workflow needs consistent rules across forms, services and the database. Checking a rating only in the browser would not stop an invalid write through another path. Checking for an existing review before insertion also does not replace a database uniqueness constraint: the database remains the final authority for the user/product pairing.\n\nProduct discovery presents a separate consistency problem. The HTML catalogue and product API accept similar query choices, so separate implementations could diverge on hidden products, invalid prices, wildcard treatment or ordering. The shared service handles those rules once and returns a paginated result to each caller.\n\nThe application is a modular Flask monolith, with domain blueprints and SQLAlchemy models. It is not a microservice deployment. SQLite supports the local demo and isolated tests; Docker Compose provides a SQL Server environment. Since SQL dialects can differ, passing SQLite tests alone does not demonstrate SQL Server integration correctness.\n\nAuthentication, checkout, administrative screens and the broader application are team work. The portfolio isolates Kiên's database/product responsibilities instead of attributing every repository feature to one person. The canonical group repository is used because the personal fork inspected earlier was incomplete."
+        },
+        {
+          "title": "System Architecture",
+          "markdown": "```mermaid\nflowchart TD\n    WEB[\"Browser and HTML forms\"] --> ROUTES[\"Flask factory and domain blueprints\"]\n    API[\"Public product API and protected order API\"] --> ROUTES\n    ROUTES --> PROD[\"Shared product-query service\"]\n    ROUTES --> REV[\"Review validation and aggregation service\"]\n    PROD --> ORM[\"SQLAlchemy models and Alembic migrations\"]\n    REV --> ORM\n    ORM --> SQLITE[(\"SQLite local demo and isolated tests\")]\n    ORM --> MSSQL[(\"SQL Server in Docker\")]\n```\n\n\nThe application factory initializes database, migration, session-login, JWT and CSRF extensions before registering blueprints. HTML forms use CSRF validation. The API blueprint is CSRF-exempt; product browsing is public, while order endpoints have their own authentication/authorization requirements. The diagram summarizes the data path and does not claim that every API route requires JWT."
+        },
+        {
+          "title": "Key Engineering Decisions",
+          "markdown": "1. **Enforce integrity at the model/database boundary.** A stock CHECK constraint rejects negative values. The review model has a composite user/product UNIQUE constraint and a rating CHECK constraint. Alembic migrations represent schema changes. These rules protect defined invariants, not every possible inventory or checkout-concurrency property.\n2. **Provide actionable service validation.** The review service parses integer ratings, bounds them to 1–5, limits comment length and detects duplicate reviews before insertion. It also catches `IntegrityError` and rolls back failed writes. The database constraint remains necessary even when the service checks first.\n3. **Share the product-query layer.** Search, category/price filters, sort selection and pagination are centralized. Only active products are returned by the public lookup path. Literal LIKE characters are escaped, price input is parsed into `Decimal`, and invalid ranges produce warnings or normalized bounds.\n4. **Make ordering compatible with SQL Server.** Pagination receives an explicit ordering. The `newest` option uses descending product ID because there is no creation-time column; it should not be described as a true timestamp-based ordering. Non-unique sorts use a stable ID tie-breaker where appropriate.\n5. **Preserve decimal rating aggregation.** `get_rating_summary` casts ratings to SQLAlchemy `Float` inside `AVG`. The regression expectation for ratings 4 and 5 is 4.5. The code fix and expected result are verified; this content review did not execute a SQL Server integration test.\n6. **Scope regression checks to observable behaviours.** Guest review submission is rejected, out-of-range ratings are blocked, duplicate reviews are rejected, negative stock is rejected and comment output is checked for escaping. One escaped-comment test is evidence about one output path, not an exhaustive XSS assessment.\n\nThe source snapshot also shows test configuration selecting an in-memory SQLite database before application import. Some review fixtures disable CSRF to isolate their tested behaviour. Therefore those particular fixtures should not be presented as end-to-end proof of the application's CSRF protection."
+        },
+        {
+          "title": "Product Discovery: Capabilities and Routes",
+          "markdown": "| Capability | Shared implementation |\n| --- | --- |\n| Search | Keyword queries over product name/description |\n| Filtering | Category and normalized price bounds |\n| Sorting | Allowlisted price/name/ID ordering |\n| Pagination | Ordered SQLAlchemy pagination |\n\nThe four relevant catalogue/detail URLs are `GET /products`, `GET /products/<id>`, `GET /api/products` and `GET /api/products/<product_id>`. They are web/API list-detail routes, not a one-to-one mapping of the four capabilities. Review submission is a separate `POST /products/<id>/reviews` route."
+        },
+        {
+          "title": "Quantitative Evaluation / Benchmarks",
+          "markdown": "| Observation | Verified value | Interpretation |\n| --- | --- | --- |\n| Database integrity rules | 3 | Stock non-negativity, user/product review uniqueness and rating bounds |\n| Discovery capabilities | 4 | Search, filtering, sorting and pagination |\n| Review test functions | 12 | Source-counted function definitions, including parametrized functions |\n| Stock test functions | 2 | Negative stock rejection and zero stock allowance |\n| Total authored review/stock test functions | 14 | Not a new passing-test total or a coverage percentage |\n| Decimal-average regression expectation | Ratings 4 and 5 produce expected average 4.5 | Test assertion; not a newly measured SQL Server result |\n| Fresh passing-test count / coverage | PENDING_TEST_REPORT | No suite was rerun in this review |\n| Production latency, traffic or defect reduction | Not established | No performance or business-impact claim |\n\n\n\nContribution history links: [review implementation](https://github.com/ChauLeGiaBao/MiniEcommerce-PWD301/commit/6c46368f103fd10c209ee67e901ee5a0dd41c986), [stock constraint](https://github.com/ChauLeGiaBao/MiniEcommerce-PWD301/commit/be2cb70cf0cfe8aff1fcb1a99be301befe22b2e0), and [AVG fix](https://github.com/ChauLeGiaBao/MiniEcommerce-PWD301/commit/6668e7310936d6ab1f403438218f6884e4247f60). The saved commit metadata records the author identity matching the email in the CV."
+        }
+      ]
+    },
+    {
+      "id": "aic211",
+      "sourceNumber": 2,
+      "title": "Reading between the emails",
+      "fullTitle": "Spam, Phishing & BEC Email Detection",
+      "course": "AIC211",
+      "discipline": "ML threat detection",
+      "role": "Team Lead · academic project",
+      "timeline": "May–July 2026",
+      "tags": [
+        "Python",
+        "scikit-learn",
+        "XGBoost"
+      ],
+      "repo": "https://github.com/Kin-jong-un2657/AIC211-Spam-BEC-Email-Detection",
+      "private": false,
+      "description": "A three-class email baseline combining TF-IDF and metadata, with an explicit plan to correct evaluation.",
+      "scope": [
+        "3 email classes",
+        "3 classifiers compared"
+      ],
+      "status": "Metric re-evaluation pending",
+      "icon": "mail",
+      "sections": [
+        {
+          "title": "Executive Summary",
+          "markdown": "I led an academic project comparing three approaches to email classification: Naive Bayes, calibrated Linear SVM and XGBoost. The workflow distinguishes benign messages, phishing and business email compromise using subject/body text, TF-IDF features and lightweight metadata. My documented role covers team coordination, pipeline integration, model comparison and review of classification results.\n\nThe implementation provides preprocessing, feature construction, training, confusion matrices, precision–recall plots and illustrative predictions. The feature design includes signals such as URLs, urgency terms and subject length, making the project useful for discussing the difference between text classification and a defensible security-detection workflow.\n\nThe source review also identifies material evaluation defects. Sender values are overwritten from subject text, TF-IDF is fitted before the split, one metadata feature is misnamed, and the error-analysis script maps predictions to the wrong raw rows. These corrections have not been completed. The portfolio therefore presents the implemented baseline and its engineering lessons while marking F1, recall and false-positive benchmarks as pending re-evaluation. It does not reuse an impressive archived recall figure as a validated achievement."
+        },
+        {
+          "title": "Problem & Security/Engineering Constraints",
+          "markdown": "The task assigns one of three labels to each email. BEC is included as its own class because the project aims to inspect messages involving business impersonation alongside conventional phishing and benign communication. A valid comparison needs more than a model score: it must preserve original data fields, isolate evaluation data and connect each prediction to the exact message being analyzed.\n\nThe repository is a script-based academic pipeline. Input is expected at `data/dataset.csv`, with subject, body, sender and label fields. The original dataset is absent from the checkout. The feature/training scripts exchange arrays and pickle artifacts through `outputs/models/`; they do not implement a live mailbox, email gateway or deployable API.\n\nThe candidate has confirmed that the pipeline has not yet been repaired. Consequently, source inspection can verify the design and algorithms but cannot establish a trustworthy corrected metric. Previously saved models and plots also lack a dependency lock and persisted split-row mapping that would make their provenance easy to reproduce.\n\nThere is a concrete distinction between reviewing class-level confusion counts and attributing a mistake to a particular email. The latter is currently unreliable because `error_analysis.py` takes the final rows of the processed CSV, while training uses a randomized stratified split. Its displayed email examples can therefore be attached to unrelated predictions even when array-level counts can be computed."
+        },
+        {
+          "title": "System Architecture",
+          "markdown": "```mermaid\nflowchart TD\n    RAW[\"Email CSV: subject, body, sender, label\"] --> CLEAN[\"Legacy text preprocessing\"]\n    CLEAN --> FEAT[\"TF-IDF fit before split plus metadata extraction\"]\n    FEAT --> SPLIT[\"Stratified 70 / 15 / 15 split\"]\n    SPLIT --> MODELS[\"Naive Bayes, calibrated Linear SVM, XGBoost\"]\n    MODELS --> EVAL[\"Classification reports and confusion matrices\"]\n    EVAL --> OUT[\"Archived plots: evaluation corrections pending\"]\n    MODELS --> DEMO[\"Three illustrative email predictions\"]\n```\n\n\nThis diagram describes the inspected baseline, including the pre-split feature fitting. It deliberately does not portray the planned leakage correction as already implemented. The separate `error_analysis.py` path is excluded from a trusted demonstration until its row mapping is repaired.\n\nThe text cleaner strips HTML, normalizes case and characters, tokenizes with NLTK and removes stop words. TF-IDF uses unigram/bigram features with sublinear term frequency. Five scalar metadata fields are concatenated with the sparse text matrix. The training script then performs the split, trains three classifiers and saves model/test artifacts. Evaluation plots confusion matrices and precision–recall curves."
+        },
+        {
+          "title": "Key Engineering Decisions",
+          "markdown": "1. **Compare conventional text-classification baselines.** The code implements Multinomial Naive Bayes, Linear SVM wrapped by `CalibratedClassifierCV`, and XGBoost. This gives an inspectable comparison rather than assuming that one model family is superior. No winner is certified from the current artifacts.\n2. **Combine lexical and metadata signals.** TF-IDF captures subject/body tokens; metadata captures URL count, URL presence, urgency-word presence, subject length and a free-provider heuristic. These are implemented features, not proof of reliable sender authentication or genuine Reply-To mismatch detection.\n3. **Use class-sensitive review.** Precision, recall, F1 and confusion matrices make BEC misses and benign false positives visible. They are more informative for this task than a single overall accuracy value, but their validity still depends on a correct data pipeline.\n4. **Recognize the limits of the present script boundary.** Training and inference duplicate some cleaning/metadata logic, creating a maintenance risk. A correction should make those transformations consistent, preserve sample IDs and fit learnable text transformations on training data only. This is a proposed improvement, not completed work.\n5. **Retain the baseline without endorsing its metrics.** Archived reports are useful for identifying what the old workflow produced. Their presence does not override the known leakage and field-mapping issues. The portfolio treats them as historical outputs awaiting replacement."
+        },
+        {
+          "title": "Required Corrections — Not Yet Implemented",
+          "markdown": "| Finding | Verified source behaviour | Next engineering action |\n| --- | --- | --- |\n| Sender corruption | `sender` is assigned from `subject` | Preserve the original sender field and test preprocessing |\n| Train/test contamination | `fit_transform` runs before the split | Split raw rows first; fit on train, transform validation/test |\n| Misleading metadata name | `reply_to_mismatch` checks free-provider strings | Rename accurately or implement a real comparison if both headers exist |\n| Incorrect email-level error attribution | Last CSV rows are paired with shuffled test labels | Persist split IDs and join predictions to those IDs |\n| Incorrect false-positive example | Variables from the false-negative loop are reused | Iterate over the actual false-positive subset |\n| Memory/reproducibility gap | Test features are saved after dense conversion; no dependency lock | Preserve suitable sparse artifacts and record the corrected environment |\n\nThese repairs should be followed by a complete rerun. Editing the README or relabeling an archived plot would not fix the underlying experiment. `test.py` is a script that prints three illustrative predictions, not a pytest suite or a held-out accuracy test."
+        },
+        {
+          "title": "Quantitative Evaluation / Benchmarks",
+          "markdown": "| Field | Verified implementation or evaluation status |\n| --- | --- |\n| Target classes | 3: benign, phishing, BEC |\n| Compared classifiers | 3: Naive Bayes, calibrated Linear SVM, XGBoost |\n| TF-IDF configuration | Up to 10,000 unigram/bigram features; configured limit, not verified fitted dimension |\n| Metadata inputs | 5 scalar features |\n| Split configured in source | 70% train / 15% validation / 15% test, stratified, random state 42; currently after feature fitting |\n| Corrected macro-F1 | PENDING_EMAIL_METRIC |\n| Corrected BEC precision / recall | PENDING_EMAIL_METRIC |\n| Corrected benign false-positive rate | PENDING_EMAIL_METRIC |\n| Training and evaluation sample counts | PENDING_EMAIL_METRIC |\n\n**Performance metrics are undergoing re-evaluation; no corrected run is verified.** Archived recall figures are withheld pending a corrected evaluation. That value is excluded from achievement copy because the inspected pipeline is not methodologically sound. No repaired F1, recall, latency, deployment volume or detection gain is inferred from the code."
+        }
+      ]
+    }
+  ]
+}
