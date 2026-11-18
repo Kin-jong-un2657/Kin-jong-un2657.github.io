@@ -100,7 +100,11 @@ try {
     await page.$eval('.diagram img', el => el.scrollIntoView());
     await page.waitForFunction(() => [...document.images].every(img => img.complete && img.naturalWidth > 0));
     assert(!(await page.$eval('body', el => el.innerText)).includes('Điền số liệu'));
-    if (id === 'aic211') assert(await page.$('.status-pending'));
+    if (id === 'aic211') {
+      assert.equal(await page.$('.status-pending'), null);
+      const text = await page.$eval('body', el => el.innerText);
+      for (const metric of ['99.18%', '99.52%', '0.10%', '9,497', '63,305', '16 pytest tests', '97.46%', '98.04%']) assert(text.includes(metric));
+    }
     await audit(page, `${id}-${theme}-375`);
     await screenshot(page, `case-${id}-${theme}-mobile.png`);
     await page.setViewport({ width: 1440, height: 1000 });

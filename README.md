@@ -39,7 +39,7 @@ qa/browser.mjs            Chromium interaction/accessibility checks
 ## Content integrity
 
 - Unverified metrics are displayed as status badges; raw editorial placeholders are not rendered.
-- AIC211 remains an academic baseline with evaluation corrections pending.
+- AIC211 presents the author-confirmed corrected grouped evaluation (18 November 2026): 99.18% accuracy/macro F1, 99.52% BEC recall, 0.10% benign-to-BEC FPR (3/3,000), 9,497 test emails from 63,305 emails, and 16 pytest tests. It retains uncalibrated-SVM, English-only-regex and unmeasured cross-source limitations.
 - IAM302t retains the distinction between audit records, variants and independent parents, and is labelled as a private repository.
 - MiniEcommerce counts 14 test functions, not 14 newly passing cases; its link points to the canonical team repository.
 - The Forensics & tools category describes verified static inspection/research tooling, without inventing incident-response experience.
